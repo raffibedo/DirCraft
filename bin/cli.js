@@ -34,6 +34,7 @@ async function main(options = null) {
       parsedOptions.outputDir,
       {
         skipConfirmation: parsedOptions.skipConfirmation,
+        dryRun: parsedOptions.dryRun,
       }
     );
   } else {
@@ -43,6 +44,7 @@ async function main(options = null) {
       parsedOptions.outputDir,
       {
         skipConfirmation: parsedOptions.skipConfirmation,
+        dryRun: parsedOptions.dryRun,
       }
     );
   }

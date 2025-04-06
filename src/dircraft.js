@@ -24,7 +24,11 @@ export async function confirmAction(message) {
   return new Promise((resolve) => {
     rl.question(`${message} (Y/n): `, (answer) => {
       rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes" || answer === "");
+      resolve(
+        answer.toLowerCase() === "y" ||
+          answer.toLowerCase() === "yes" ||
+          answer === ""
+      );
     });
   });
 }
@@ -169,6 +173,7 @@ export function separateDirectoriesAndFiles(paths) {
  * @param {string} outputDir - Directory where to create the structure
  * @param {Object} options - Additional options
  * @param {boolean} options.skipConfirmation - If true, skips confirmation
+ * @param {boolean} options.dryRun - If true, runs in simulation mode without creating files
  * @param {Object} options.logger - Object for logging (console by default)
  * @param {Object} options.fileSystem - File system to use (fs by default)
  * @returns {Promise<{success: boolean, error?: Error}>}
@@ -180,6 +185,7 @@ export async function parseDirectoryStructure(
 ) {
   const logger = options.logger || console;
   const fileSystem = options.fileSystem || fs;
+  const isDryRun = options.dryRun || false;
 
   try {
     // Read file content
@@ -215,6 +221,12 @@ export async function parseDirectoryStructure(
       logger.log(`  📄 ${file}${comments[file] ? ` (${comments[file]})` : ""}`);
     }
     logger.log();
+
+    // If it's a dry run, stop here
+    if (isDryRun) {
+      logger.log("DRY RUN: No files or directories were created.");
+      return { success: true };
+    }
 
     // Request confirmation if necessary
     let shouldProceed = options.skipConfirmation;
@@ -268,6 +280,7 @@ export async function parseDirectoryStructure(
  * @param {string} outputDir - Directory where to create the structure
  * @param {Object} options - Additional options
  * @param {boolean} options.skipConfirmation - If true, skips confirmation
+ * @param {boolean} options.dryRun - If true, runs in simulation mode without creating files
  * @param {Object} options.logger - Object for logging (console by default)
  * @param {Object} options.fileSystem - File system to use (fs by default)
  * @returns {Promise<{success: boolean, error?: Error}>}
@@ -279,6 +292,7 @@ export async function parseDirectoryFromText(
 ) {
   const logger = options.logger || console;
   const fileSystem = options.fileSystem || fs;
+  const isDryRun = options.dryRun || false;
 
   try {
     logger.log("Analyzing structure from direct input...");
@@ -310,6 +324,12 @@ export async function parseDirectoryFromText(
       logger.log(`  📄 ${file}${comments[file] ? ` (${comments[file]})` : ""}`);
     }
     logger.log();
+
+    // If it's a dry run, stop here
+    if (isDryRun) {
+      logger.log("DRY RUN: No files or directories were created.");
+      return { success: true };
+    }
 
     // Request confirmation if necessary
     let shouldProceed = options.skipConfirmation;
@@ -371,7 +391,8 @@ export function parseArgs(args) {
     outputDir: ".",
     skipConfirmation: false,
     showHelp: false,
-    directStructure: null, // New option for direct structure
+    directStructure: null, // Option for direct structure
+    dryRun: false, // Option for dry run mode
   };
 
   for (let i = 0; i < cliArgs.length; i++) {
@@ -385,6 +406,8 @@ export function parseArgs(args) {
       options.outputDir = cliArgs[++i] || ".";
     } else if (arg === "-s" || arg === "--structure") {
       options.directStructure = cliArgs[++i] || null;
+    } else if (arg === "-d" || arg === "--dry-run") {
+      options.dryRun = true;
     } else if (!options.filePath && !options.directStructure) {
       options.filePath = arg;
     }
@@ -409,12 +432,13 @@ Options:
   -y, --yes               Skips confirmation
   -o, --output <dir>      Specifies the output directory (default: current directory)
   -s, --structure <text>  Provides the structure directly as text instead of from a file
+  -d, --dry-run           Shows what would be created without actually creating anything
 
 Examples:
   dircraft structure.txt
   dircraft -y structure.txt
   dircraft -o ./my-project structure.txt
-  dircraft -s "my-project/
+  dircraft -d -s "my-project/
 ├── src/
 │   └── index.js
 └── package.json"
