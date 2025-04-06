@@ -4,17 +4,42 @@ import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
-import os from "os";
 import readline from "readline";
 
-// Get absolute paths
+// Get absolute paths in a way that works both when installed as a package and when run directly
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.join(__dirname, "..");
-const CLI_PATH = path.join(ROOT_DIR, "bin/cli.js");
 
-// Create temporary directory for tests
-const TEMP_DIR = path.join("demos/", `dircraft-nextjs-demo-${Date.now()}`);
+// Try to find the package root in different scenarios
+let packageRoot;
+try {
+  // When running as an installed package
+  packageRoot = path.resolve(path.join(__dirname, ".."));
+
+  // Test if this is actually the installed package root
+  const packageJsonPath = path.join(packageRoot, "package.json");
+  await fs.access(packageJsonPath);
+} catch (error) {
+  try {
+    // When running from the source code repository
+    packageRoot = path.resolve(path.join(__dirname, ".."));
+  } catch (innerError) {
+    console.error(
+      "Unable to determine package root. Running in current directory."
+    );
+    packageRoot = process.cwd();
+  }
+}
+
+// Resolve the CLI path
+const CLI_PATH = path.join(packageRoot, "bin", "cli.js");
+
+// Create temporary directory for demos
+const TEMP_DIR = path.join(
+  process.cwd(),
+  "demos",
+  `dircraft-nextjs-demo-${Date.now()}`
+);
 
 /**
  * Creates a command line interface for user interaction
@@ -46,14 +71,12 @@ async function promptUser(message) {
 /**
  * Generate a Next.js component structure
  * @param {string} componentName - Component name
- * @param {boolean} isPageComponent - Whether it's a page component
  * @param {boolean} hasTests - Whether to include tests
  * @param {boolean} hasStories - Whether to include stories (Storybook)
  * @returns {string} - Component structure
  */
 function generateComponentStructure(
   componentName,
-  isPageComponent = false,
   hasTests = true,
   hasStories = true
 ) {
@@ -70,12 +93,6 @@ function generateComponentStructure(
   if (hasStories) {
     structure += `
 ├── ${componentName}.stories.jsx    # Stories for Storybook`;
-  }
-
-  if (isPageComponent) {
-    structure += `
-├── hooks/                          # Component-specific hooks
-│   └── use${componentName}Data.js  # Hook to fetch data`;
   }
 
   return structure;
@@ -102,18 +119,13 @@ async function createComponentStructureFile(outputDir, structure) {
  */
 async function main() {
   try {
-    console.log("=== Next.js 15 Component Generator ===\n");
+    console.log("=== Next.js Component Generator ===\n");
 
     // Create temporary directory
     await fs.mkdir(TEMP_DIR, { recursive: true });
 
     // Request information from user
     const componentName = await promptUser("Component name: ");
-    const isPageComponent = (
-      await promptUser("Is this a page component? (y/n): ")
-    )
-      .toLowerCase()
-      .startsWith("y");
     const hasTests = (await promptUser("Include tests? (y/n): "))
       .toLowerCase()
       .startsWith("y");
@@ -132,7 +144,6 @@ async function main() {
     // Generate structure
     const structure = generateComponentStructure(
       componentName,
-      isPageComponent,
       hasTests,
       hasStories
     );
@@ -155,11 +166,11 @@ async function main() {
       structure
     );
 
-    // Run Scaffoldy
+    // Run DirCraft
     console.log("\nCreating component structure...");
     try {
       const output = execSync(
-        `node ${CLI_PATH} "${structureFile}" -o "${outputDir}" -y`,
+        `node "${CLI_PATH}" "${structureFile}" -o "${outputDir}" -y`,
         {
           encoding: "utf-8",
         }

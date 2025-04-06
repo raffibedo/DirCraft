@@ -14,7 +14,7 @@ const ROOT_DIR = path.join(__dirname, "..");
 const CLI_PATH = path.join(ROOT_DIR, "bin/cli.js");
 
 // Create temporary directory for tests
-const TEMP_DIR = path.join("demos/", `scaffoldy-nextjs-demo-${Date.now()}`);
+const TEMP_DIR = path.join("demos/", `dircraft-nextjs-demo-${Date.now()}`);
 
 /**
  * Creates a command line interface for user interaction
@@ -102,7 +102,7 @@ async function createComponentStructureFile(outputDir, structure) {
  */
 async function main() {
   try {
-    console.log("=== Next.js 15 Component Generator ===\n");
+    console.log("=== Next.js Component Generator ===\n");
 
     // Create temporary directory
     await fs.mkdir(TEMP_DIR, { recursive: true });
@@ -155,7 +155,7 @@ async function main() {
       structure
     );
 
-    // Run Scaffoldy
+    // Run dircraft
     console.log("\nCreating component structure...");
     try {
       const output = execSync(
