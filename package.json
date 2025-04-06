@@ -1,6 +1,6 @@
 {
   "name": "dircraft",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Project structure generator from ASCII tree formatted text files",
   "type": "module",
   "main": "bin/cli.js",
